@@ -152,3 +152,15 @@ export const getProjectStatistics = async () => {
     },
   };
 };
+
+/**
+ * Get project members (owner + members list)
+ */
+export const getProjectMembers = async (id: string) => {
+  const project = await getProjectById(id);
+
+  return {
+    owner: project.owner,
+    members: project.members || [],
+  };
+};

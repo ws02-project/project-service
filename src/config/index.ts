@@ -8,6 +8,10 @@ export const config = {
   apiVersion: process.env.API_VERSION || 'v1',
   serviceName: process.env.SERVICE_NAME || 'project-service',
   logLevel: process.env.LOG_LEVEL || 'info',
+  grpc: {
+    port: parseInt(process.env.GRPC_PORT || '50051', 10),
+    taskServiceUrl: process.env.TASK_SERVICE_GRPC_URL || 'localhost:50052',
+  },
   db: {
     host: process.env.DB_HOST || 'localhost',
     port: parseInt(process.env.DB_PORT || '5432', 10),
