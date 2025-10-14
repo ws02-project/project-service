@@ -2,6 +2,18 @@ import * as grpc from '@grpc/grpc-js';
 import { getProjectById, getProjectMembers } from '../../services/project.service';
 import { ProjectStatus } from '../../models/project.model';
 import logger from '../../utils/logger';
+import type {
+  GrpcServerCall,
+  GrpcCallback,
+  GetProjectRequest,
+  GetProjectResponse,
+  ValidateProjectAccessRequest,
+  ValidateProjectAccessResponse,
+  GetProjectMembersRequest,
+  GetProjectMembersResponse,
+  CanAddTasksRequest,
+  CanAddTasksResponse,
+} from '../../types/grpc.types';
 
 /**
  * gRPC Service Implementation for ProjectService
@@ -10,7 +22,10 @@ import logger from '../../utils/logger';
 /**
  * Get project details by ID
  */
-export const getProject = async (call: any, callback: any) => {
+export const getProject = async (
+  call: GrpcServerCall<GetProjectRequest>,
+  callback: GrpcCallback<GetProjectResponse>,
+) => {
   try {
     const { project_id } = call.request;
 
@@ -34,13 +49,14 @@ export const getProject = async (call: any, callback: any) => {
       created_at: project.createdAt.toISOString(),
       updated_at: project.updatedAt.toISOString(),
     });
-  } catch (error: any) {
+  } catch (error) {
     logger.error('gRPC GetProject error:', error);
 
-    if (error.statusCode === 404) {
+    const err = error as { statusCode?: number; message?: string };
+    if (err.statusCode === 404) {
       return callback({
         code: grpc.status.NOT_FOUND,
-        message: error.message || 'Project not found',
+        message: err.message || 'Project not found',
       });
     }
 
@@ -54,7 +70,10 @@ export const getProject = async (call: any, callback: any) => {
 /**
  * Validate if a user has access to a project
  */
-export const validateProjectAccess = async (call: any, callback: any) => {
+export const validateProjectAccess = async (
+  call: GrpcServerCall<ValidateProjectAccessRequest>,
+  callback: GrpcCallback<ValidateProjectAccessResponse>,
+) => {
   try {
     const { project_id, user_id } = call.request;
 
@@ -75,10 +94,11 @@ export const validateProjectAccess = async (call: any, callback: any) => {
       has_access: hasAccess,
       message: hasAccess ? 'User has access to project' : 'User does not have access to project',
     });
-  } catch (error: any) {
+  } catch (error) {
     logger.error('gRPC ValidateProjectAccess error:', error);
 
-    if (error.statusCode === 404) {
+    const err = error as { statusCode?: number };
+    if (err.statusCode === 404) {
       return callback(null, {
         has_access: false,
         message: 'Project not found',
@@ -95,7 +115,10 @@ export const validateProjectAccess = async (call: any, callback: any) => {
 /**
  * Get project members
  */
-export const getProjectMembersRpc = async (call: any, callback: any) => {
+export const getProjectMembersRpc = async (
+  call: GrpcServerCall<GetProjectMembersRequest>,
+  callback: GrpcCallback<GetProjectMembersResponse>,
+) => {
   try {
     const { project_id } = call.request;
 
@@ -113,10 +136,11 @@ export const getProjectMembersRpc = async (call: any, callback: any) => {
       owner: members.owner,
       members: members.members || [],
     });
-  } catch (error: any) {
+  } catch (error) {
     logger.error('gRPC GetProjectMembers error:', error);
 
-    if (error.statusCode === 404) {
+    const err = error as { statusCode?: number };
+    if (err.statusCode === 404) {
       return callback({
         code: grpc.status.NOT_FOUND,
         message: 'Project not found',
@@ -133,7 +157,10 @@ export const getProjectMembersRpc = async (call: any, callback: any) => {
 /**
  * Check if project can accept new tasks
  */
-export const canAddTasks = async (call: any, callback: any) => {
+export const canAddTasks = async (
+  call: GrpcServerCall<CanAddTasksRequest>,
+  callback: GrpcCallback<CanAddTasksResponse>,
+) => {
   try {
     const { project_id } = call.request;
 
@@ -161,10 +188,11 @@ export const canAddTasks = async (call: any, callback: any) => {
       status: project.status,
       message,
     });
-  } catch (error: any) {
+  } catch (error) {
     logger.error('gRPC CanAddTasks error:', error);
 
-    if (error.statusCode === 404) {
+    const err = error as { statusCode?: number };
+    if (err.statusCode === 404) {
       return callback({
         code: grpc.status.NOT_FOUND,
         message: 'Project not found',
