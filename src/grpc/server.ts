@@ -4,11 +4,14 @@ import path from 'path';
 import logger from '../utils/logger';
 import { getProjectGrpc, validateProjectAccessGrpc } from '../services/project.service';
 
+interface ProjectProtoNamespace {
+  ProjectService: {
+    service: grpc.ServiceDefinition;
+  };
+}
+
 const PROTO_PATH = path.resolve(__dirname, '../../proto/project.proto');
 
-/**
- * Start gRPC Server for Project Service
- */
 export const startGrpcServer = (port: number = 50051): grpc.Server => {
   const packageDefinition = protoLoader.loadSync(PROTO_PATH, {
     keepCase: true,
@@ -18,14 +21,14 @@ export const startGrpcServer = (port: number = 50051): grpc.Server => {
     oneofs: true,
   });
 
-  const projectProto = grpc.loadPackageDefinition(packageDefinition).project as any;
+  const projectProto = grpc.loadPackageDefinition(packageDefinition)
+    .project as unknown as ProjectProtoNamespace;
 
   const server = new grpc.Server();
 
-  // Register ProjectService methods
   server.addService(projectProto.ProjectService.service, {
-    GetProject: getProjectGrpc, // GET example
-    ValidateProjectAccess: validateProjectAccessGrpc, // POST example
+    GetProject: getProjectGrpc,
+    ValidateProjectAccess: validateProjectAccessGrpc,
   });
 
   server.bindAsync(
