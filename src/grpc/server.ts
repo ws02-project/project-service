@@ -2,7 +2,7 @@ import * as grpc from '@grpc/grpc-js';
 import * as protoLoader from '@grpc/proto-loader';
 import path from 'path';
 import logger from '../utils/logger';
-import * as projectGrpcService from './services/project.grpc.service';
+import { getProjectGrpc, validateProjectAccessGrpc } from '../services/project.service';
 
 const PROTO_PATH = path.resolve(__dirname, '../../proto/project.proto');
 
@@ -24,10 +24,8 @@ export const startGrpcServer = (port: number = 50051): grpc.Server => {
 
   // Register ProjectService methods
   server.addService(projectProto.ProjectService.service, {
-    GetProject: projectGrpcService.getProject,
-    ValidateProjectAccess: projectGrpcService.validateProjectAccess,
-    GetProjectMembers: projectGrpcService.getProjectMembersRpc,
-    CanAddTasks: projectGrpcService.canAddTasks,
+    GetProject: getProjectGrpc, // GET example
+    ValidateProjectAccess: validateProjectAccessGrpc, // POST example
   });
 
   server.bindAsync(

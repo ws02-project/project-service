@@ -8,8 +8,7 @@ const validate = (schema: Record<string, Joi.Schema>) => {
     const validSchema = Object.keys(schema).reduce(
       (acc, key) => {
         if (['params', 'query', 'body'].includes(key)) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          acc[key] = (req as any)[key];
+          acc[key] = req[key as keyof Pick<Request, 'params' | 'query' | 'body'>];
         }
         return acc;
       },

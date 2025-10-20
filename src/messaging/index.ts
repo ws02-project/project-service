@@ -1,6 +1,7 @@
 import { EventBus, ServiceRegistration } from './EventBus';
 import { config } from '../config';
 import logger from '../utils/logger';
+import { handleTaskCreated, handleTaskDeleted } from '../services/project.service';
 
 // Create EventBus instance
 export const eventBus = new EventBus('project-service', 'microservices.exchange');
@@ -41,18 +42,8 @@ export async function initializeMessaging(): Promise<void> {
           sourceService: 'task-service',
         },
         {
-          eventType: 'task.updated',
-          routingKey: 'task.updated',
-          sourceService: 'task-service',
-        },
-        {
           eventType: 'task.deleted',
           routingKey: 'task.deleted',
-          sourceService: 'task-service',
-        },
-        {
-          eventType: 'task.status_changed',
-          routingKey: 'task.status.changed',
           sourceService: 'task-service',
         },
       ],
@@ -78,38 +69,9 @@ export async function initializeMessaging(): Promise<void> {
  * Register handlers for events from other services
  */
 function registerEventHandlers(): void {
-  // Handle task created events
-  eventBus.on('task.created', 'task.TaskCreatedEvent', async (event, _metadata) => {
-    logger.info(`📝 Task created in project ${event.projectId}:`, {
-      taskId: event.taskId,
-      title: event.title,
-    });
-    // Update project statistics, cache, etc.
-  });
-
-  // Handle task updated events
-  eventBus.on('task.updated', 'task.TaskUpdatedEvent', async (event, _metadata) => {
-    logger.info(`📝 Task updated in project ${event.projectId}:`, {
-      taskId: event.taskId,
-      changes: event.changes,
-    });
-  });
-
-  // Handle task deleted events
-  eventBus.on('task.deleted', 'task.TaskDeletedEvent', async (event, _metadata) => {
-    logger.info(`🗑️ Task deleted from project ${event.projectId}:`, {
-      taskId: event.taskId,
-    });
-  });
-
-  // Handle task status changed events
-  eventBus.on('task.status_changed', 'task.TaskStatusChangedEvent', async (event, _metadata) => {
-    logger.info(`🔄 Task status changed in project ${event.projectId}:`, {
-      taskId: event.taskId,
-      oldStatus: event.oldStatus,
-      newStatus: event.newStatus,
-    });
-  });
+  // Handle task events - handlers are in project.service.ts
+  eventBus.on('task.created', 'task.TaskCreatedEvent', handleTaskCreated);
+  eventBus.on('task.deleted', 'task.TaskDeletedEvent', handleTaskDeleted);
 }
 
 /**
