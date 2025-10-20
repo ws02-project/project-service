@@ -8,6 +8,7 @@ import {
 import createApiError from '../utils/ApiError';
 import httpStatus from 'http-status';
 import { AppDataSource } from '../config/database';
+import { publishProjectCreated } from '../messaging';
 
 // Helper to get repository
 const getProjectRepository = (): Repository<Project> => AppDataSource.getRepository(Project);
@@ -80,7 +81,18 @@ export const createProject = async (projectData: CreateProjectDTO): Promise<Proj
     tags: projectData.tags || [],
   });
 
-  return await projectRepository.save(project);
+  const savedProject = await projectRepository.save(project);
+
+  // Publish project created event
+  await publishProjectCreated(savedProject.id, {
+    name: savedProject.name,
+    description: savedProject.description || '',
+    status: savedProject.status,
+    owner: savedProject.owner || null,
+    tags: savedProject.tags || [],
+  });
+
+  return savedProject;
 };
 
 /**

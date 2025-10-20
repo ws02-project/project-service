@@ -6,6 +6,7 @@ import { config } from './config';
 import logger from './utils/logger';
 import { initializeDatabase, closeDatabase } from './config/database';
 import { startGrpcServer, shutdownGrpcServer } from './grpc/server';
+import { initializeMessaging, closeMessaging } from './messaging';
 
 let server: Server | undefined;
 let grpcServer: grpc.Server | undefined;
@@ -15,6 +16,10 @@ const startServer = async () => {
     // Initialize database connection
     await initializeDatabase();
     logger.info('✅ Database initialized successfully');
+
+    // Initialize EventBus messaging system
+    await initializeMessaging();
+    logger.info('✅ EventBus messaging initialized successfully');
 
     // Start gRPC server
     const grpcPort = config.grpc.port;
@@ -27,6 +32,7 @@ const startServer = async () => {
       logger.info(`📝 Environment: ${config.env}`);
       logger.info(`🔗 API: http://localhost:${config.port}/api/${config.apiVersion}`);
       logger.info(`🗄️  Database: ${config.db.host}:${config.db.port}/${config.db.name}`);
+      logger.info(`🐰 RabbitMQ: Connected`);
     });
   } catch (error) {
     logger.error('Failed to start server:', error);
@@ -41,6 +47,7 @@ const exitHandler = async () => {
       if (grpcServer) {
         await shutdownGrpcServer(grpcServer);
       }
+      await closeMessaging();
       await closeDatabase();
       process.exit(1);
     });
@@ -48,6 +55,7 @@ const exitHandler = async () => {
     if (grpcServer) {
       await shutdownGrpcServer(grpcServer);
     }
+    await closeMessaging();
     await closeDatabase();
     process.exit(1);
   }
@@ -68,6 +76,7 @@ process.on('SIGTERM', async () => {
       if (grpcServer) {
         await shutdownGrpcServer(grpcServer);
       }
+      await closeMessaging();
       await closeDatabase();
     });
   }

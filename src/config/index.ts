@@ -21,6 +21,13 @@ export const config = {
     poolMin: parseInt(process.env.DB_POOL_MIN || '2', 10),
     poolMax: parseInt(process.env.DB_POOL_MAX || '10', 10),
   },
+  rabbitmq: {
+    url: process.env.RABBITMQ_URL || 'amqp://admin:admin123@rabbitmq:5672',
+  },
+  rateLimit: {
+    windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000', 10),
+    maxRequests: parseInt(process.env.RATE_LIMIT_MAX_REQUESTS || '100', 10),
+  },
 };
 
 export const isProduction = config.env === 'production';
