@@ -32,6 +32,13 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Checkout proto repository
+        uses: actions/checkout@v4
+        with:
+          repository: ws02-project/proto
+          path: proto
+          token: ${{ secrets.PAT_TOKEN }}
+
       - name: Debug - Check AWS_ROLE_ARN variable
         run: |
           echo "AWS_ROLE_ARN value: ${{ vars.AWS_ROLE_ARN }}"

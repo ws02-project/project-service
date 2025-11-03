@@ -14,7 +14,7 @@ export const AppDataSource = new DataSource({
   synchronize: config.env === 'development', // Auto-sync schema in development only
   logging: config.env === 'development',
   entities: [Project],
-  migrations: ['src/migrations/**/*.ts'],
+  migrations: [config.env === 'production' ? 'dist/migrations/**/*.js' : 'src/migrations/**/*.ts'],
   migrationsRun: true, // Automatically run migrations on startup
   subscribers: [],
   poolSize: config.db.poolMax,

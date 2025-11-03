@@ -1,8 +1,9 @@
 # Build stage
 FROM node:22-alpine AS builder
 
-# Install pnpm
-RUN corepack enable && corepack prepare pnpm@latest --activate
+# Install pnpm and git
+RUN apk add --no-cache git && \
+    corepack enable && corepack prepare pnpm@latest --activate
 
 WORKDIR /app
 
@@ -14,6 +15,9 @@ RUN pnpm install --ignore-scripts
 
 # Copy source code
 COPY . .
+
+# Proto files will be copied here during build (see GitHub Actions workflow)
+# They should be at ./proto/ relative to the Dockerfile
 
 # Build the application
 RUN pnpm build
@@ -34,6 +38,9 @@ RUN pnpm install --prod --ignore-scripts
 
 # Copy built application from builder stage
 COPY --from=builder /app/dist ./dist
+
+# Copy proto files
+COPY --from=builder /app/proto ./proto
 
 # Create non-root user
 RUN addgroup -g 1001 -S nodejs && \
