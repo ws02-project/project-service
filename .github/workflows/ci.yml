@@ -105,11 +105,10 @@ jobs:
           token: ${{ secrets.PAT_TOKEN }}
           repository: ws02-project/deployments
           event-type: update-image
-          client-payload: |
+          client-payload: |-
             {
               "service": "project-service",
               "image_tag": "${{ steps.meta.outputs.tag }}",
               "image_full": "${{ steps.meta.outputs.image }}",
-              "commit_sha": "${{ github.sha }}",
-              "commit_message": "${{ github.event.head_commit.message }}"
+              "commit_sha": "${{ github.sha }}"
             }
