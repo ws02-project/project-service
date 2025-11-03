@@ -15,7 +15,6 @@ env:
   AWS_REGION: ap-southeast-1
   ECR_REGISTRY: 158670175038.dkr.ecr.ap-southeast-1.amazonaws.com
   ECR_REPOSITORY: docker
-  REGISTRY_DOMAIN: registry.wso2group1.tech # Custom domain alias for ECR
   SERVICE_NAME: project-service
   IMAGE_NAME: project
 
@@ -71,12 +70,8 @@ jobs:
             IMAGE_TAG=${GITHUB_SHA::8}
           fi
           echo "tag=$IMAGE_TAG" >> $GITHUB_OUTPUT
-          # ECR URLs (for Docker push)
           echo "image=${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_NAME }}-$IMAGE_TAG" >> $GITHUB_OUTPUT
           echo "image_latest=${{ env.ECR_REGISTRY }}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_NAME }}-latest" >> $GITHUB_OUTPUT
-          # Custom domain URLs (for Kubernetes/display)
-          echo "image_custom=${{ env.REGISTRY_DOMAIN }}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_NAME }}-$IMAGE_TAG" >> $GITHUB_OUTPUT
-          echo "image_latest_custom=${{ env.REGISTRY_DOMAIN }}/${{ env.ECR_REPOSITORY }}:${{ env.IMAGE_NAME }}-latest" >> $GITHUB_OUTPUT
 
       - name: Build Docker image
         env:
@@ -98,8 +93,8 @@ jobs:
       - name: Image details
         run: |
           echo "✅ Successfully pushed Project Service image:"
-          echo "  Image: ${{ steps.meta.outputs.image_custom }}"
-          echo "  Latest: ${{ steps.meta.outputs.image_latest_custom }}"
+          echo "  Image: ${{ steps.meta.outputs.image }}"
+          echo "  Latest: ${{ steps.meta.outputs.image_latest }}"
 
       - name: Trigger deployment update
         uses: peter-evans/repository-dispatch@v3
