@@ -1,0 +1,83 @@
+name: Update Kubernetes Deployment
+
+on:
+  workflow_run:
+    workflows: ['Project Service CI/CD']
+    types:
+      - completed
+
+env:
+  DEPLOYMENTS_REPO: ws02-project/deployments
+  SERVICE_NAME: project-service
+  VALUES_FILE: k8s/project-service/values.yaml
+
+jobs:
+  update-deployment:
+    name: Update Image Tag in Deployments Repo
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+
+    steps:
+      - name: Get image tag from workflow
+        id: get-tag
+        run: |
+          # Extract the image tag from the completed workflow
+          # This assumes the CI/CD workflow set the image tag as an output
+          if [[ "${{ github.ref }}" == refs/tags/v* ]]; then
+            IMAGE_TAG=${GITHUB_REF#refs/tags/v}
+          else
+            IMAGE_TAG=${GITHUB_SHA::8}
+          fi
+          echo "tag=$IMAGE_TAG" >> $GITHUB_OUTPUT
+          echo "📦 Image tag: $IMAGE_TAG"
+
+      - name: Checkout deployments repository
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.DEPLOYMENTS_REPO }}
+          token: ${{ secrets.PAT_TOKEN }}
+          path: deployments
+
+      - name: Update image tag in values.yaml
+        working-directory: deployments
+        run: |
+          IMAGE_TAG="${{ steps.get-tag.outputs.tag }}"
+
+          echo "📝 Updating ${{ env.VALUES_FILE }} with tag: project-$IMAGE_TAG"
+
+          # Update the image tag using sed
+          sed -i "s|tag: project-.*|tag: project-$IMAGE_TAG|g" ${{ env.VALUES_FILE }}
+
+          # Verify the change
+          echo "✅ Updated values.yaml:"
+          grep "tag:" ${{ env.VALUES_FILE }}
+
+      - name: Commit and push changes
+        working-directory: deployments
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git add ${{ env.VALUES_FILE }}
+
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+            exit 0
+          fi
+
+          git commit -m "chore: update ${{ env.SERVICE_NAME }} image to project-${{ steps.get-tag.outputs.tag }}
+
+          Automated update from GitHub Actions
+          Source commit: ${{ github.sha }}"
+
+          git push
+
+      - name: Summary
+        run: |
+          echo "## 🚀 Deployment Updated" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Service:** ${{ env.SERVICE_NAME }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Image Tag:** project-${{ steps.get-tag.outputs.tag }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Values File:** ${{ env.VALUES_FILE }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "ArgoCD will automatically sync and deploy the new image." >> $GITHUB_STEP_SUMMARY
