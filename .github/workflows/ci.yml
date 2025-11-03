@@ -98,3 +98,18 @@ jobs:
           echo ""
           echo "Use in Kubernetes:"
           echo "  image: ${{ steps.meta.outputs.image_latest }}"
+
+      - name: Trigger deployment update
+        uses: peter-evans/repository-dispatch@v3
+        with:
+          token: ${{ secrets.PAT_TOKEN }}
+          repository: ws02-project/deployments
+          event-type: update-image
+          client-payload: |
+            {
+              "service": "project-service",
+              "image_tag": "${{ steps.meta.outputs.tag }}",
+              "image_full": "${{ steps.meta.outputs.image }}",
+              "commit_sha": "${{ github.sha }}",
+              "commit_message": "${{ github.event.head_commit.message }}"
+            }
