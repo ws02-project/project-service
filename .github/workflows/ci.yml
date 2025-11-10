@@ -21,8 +21,6 @@ env:
 permissions:
   id-token: write # Required for OIDC authentication
   contents: read # Required to checkout code
-  security-events: write # Required to upload Trivy scan results to GitHub Security
-  actions: read # Required for CodeQL action to access workflow run info
 
 jobs:
   build-and-push:
