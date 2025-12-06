@@ -7,11 +7,11 @@ RUN apk add --no-cache git && \
 
 WORKDIR /app
 
-# Copy package files
-COPY package.json ./
+# Copy package files and lockfile
+COPY package.json pnpm-lock.yaml ./
 
-# Install dependencies (skip prepare script for Docker builds)
-RUN pnpm install --ignore-scripts
+# Install dependencies using frozen lockfile (skip prepare script for Docker builds)
+RUN pnpm install --frozen-lockfile --ignore-scripts
 
 # Copy source code
 COPY . .
@@ -25,16 +25,18 @@ RUN pnpm build
 # Production stage
 FROM node:22-alpine AS production
 
-# Install pnpm
-RUN corepack enable && corepack prepare pnpm@latest --activate
+# Install pnpm and remove npm (contains vulnerable glob@10.4.5)
+RUN corepack enable && corepack prepare pnpm@latest --activate && \
+    npm uninstall -g npm && \
+    rm -rf /usr/local/lib/node_modules/npm
 
 WORKDIR /app
 
-# Copy package files
-COPY package.json ./
+# Copy package files and lockfile
+COPY package.json pnpm-lock.yaml ./
 
-# Install production dependencies only (skip prepare script for Docker builds)
-RUN pnpm install --prod --ignore-scripts
+# Install production dependencies only using frozen lockfile (skip prepare script for Docker builds)
+RUN pnpm install --prod --frozen-lockfile --ignore-scripts
 
 # Copy built application from builder stage
 COPY --from=builder /app/dist ./dist
