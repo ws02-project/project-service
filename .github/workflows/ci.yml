@@ -151,7 +151,7 @@ jobs:
           echo "  Latest: ${{ steps.meta.outputs.image_latest }}"
 
       - name: Trigger deployment update
-        uses: peter-evans/repository-dispatch@v3
+        uses: peter-evans/repository-dispatch@v4
         with:
           token: ${{ secrets.PAT_TOKEN }}
           repository: ws02-project/deployments
