@@ -192,8 +192,16 @@ jobs:
       - name: Get commit message
         id: commit
         run: |
-          # Get the commit message (first line only for cleaner output)
-          COMMIT_MSG=$(git log -1 --pretty=%s)
+          # Check if this is a merge commit
+          PARENT_COUNT=$(git cat-file -p HEAD | grep -c "^parent")
+          if [ "$PARENT_COUNT" -gt 1 ]; then
+            # For merge commits, get the title from the merged branch's last commit
+            COMMIT_MSG=$(git log -1 --pretty=%s HEAD^2 2>/dev/null || git log -1 --pretty=%s)
+          else
+            COMMIT_MSG=$(git log -1 --pretty=%s)
+          fi
+          # Truncate long messages
+          COMMIT_MSG=$(echo "$COMMIT_MSG" | head -c 100)
           echo "message=$COMMIT_MSG" >> $GITHUB_OUTPUT
 
       - name: Trigger deployment update
