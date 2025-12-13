@@ -57,6 +57,7 @@ export const getProjectsByOwner = async (owner: string): Promise<Project[]> => {
 };
 
 export const createProject = async (projectData: CreateProjectDTO): Promise<Project> => {
+  const startTime = Date.now();
   const projectRepository = getProjectRepository();
   const project = projectRepository.create({
     name: projectData.name,
@@ -69,28 +70,84 @@ export const createProject = async (projectData: CreateProjectDTO): Promise<Proj
 
   const savedProject = await projectRepository.save(project);
 
-  await publishProjectCreated(savedProject.id, {
+  logger.info('Project created', {
+    type: 'project_created',
+    projectId: savedProject.id,
     name: savedProject.name,
-    description: savedProject.description || '',
     status: savedProject.status,
-    owner: savedProject.owner || null,
-    tags: savedProject.tags || [],
+    owner: savedProject.owner,
+    memberCount: savedProject.members?.length || 0,
+    duration: Date.now() - startTime,
   });
+
+  try {
+    await publishProjectCreated(savedProject.id, {
+      name: savedProject.name,
+      description: savedProject.description || '',
+      status: savedProject.status,
+      owner: savedProject.owner || null,
+      tags: savedProject.tags || [],
+    });
+    logger.info('Event published - project.created', {
+      type: 'event_published',
+      eventType: 'project.created',
+      projectId: savedProject.id,
+    });
+  } catch (error) {
+    logger.error('Failed to publish project.created event', {
+      type: 'event_publish_failed',
+      eventType: 'project.created',
+      projectId: savedProject.id,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    });
+  }
 
   return savedProject;
 };
 
 export const updateProject = async (id: string, updateData: UpdateProjectDTO): Promise<Project> => {
+  const startTime = Date.now();
   const projectRepository = getProjectRepository();
   const project = await getProjectById(id);
+
+  const oldStatus = project.status;
+
   Object.assign(project, updateData);
-  return await projectRepository.save(project);
+  const savedProject = await projectRepository.save(project);
+
+  // Log status change
+  if (updateData.status && updateData.status !== oldStatus) {
+    logger.info('Project status changed', {
+      type: 'project_status_changed',
+      projectId: savedProject.id,
+      oldStatus,
+      newStatus: savedProject.status,
+    });
+  }
+
+  logger.info('Project updated', {
+    type: 'project_updated',
+    projectId: savedProject.id,
+    name: savedProject.name,
+    duration: Date.now() - startTime,
+  });
+
+  return savedProject;
 };
 
 export const deleteProject = async (id: string): Promise<void> => {
+  const startTime = Date.now();
   const projectRepository = getProjectRepository();
   const project = await getProjectById(id);
+
   await projectRepository.remove(project);
+
+  logger.info('Project deleted', {
+    type: 'project_deleted',
+    projectId: id,
+    name: project.name,
+    duration: Date.now() - startTime,
+  });
 };
 
 export const addMember = async (id: string, memberId: string): Promise<Project> => {
@@ -99,16 +156,44 @@ export const addMember = async (id: string, memberId: string): Promise<Project> 
 
   if (!members.includes(memberId)) {
     members.push(memberId);
-    return await updateProject(id, { members });
+    const updatedProject = await updateProject(id, { members });
+
+    logger.info('Project member added', {
+      type: 'project_member_added',
+      projectId: id,
+      memberId,
+      totalMembers: members.length,
+    });
+
+    return updatedProject;
   }
+
+  logger.debug('Member already exists in project', {
+    type: 'project_member_exists',
+    projectId: id,
+    memberId,
+  });
 
   return project;
 };
 
 export const removeMember = async (id: string, memberId: string): Promise<Project> => {
   const project = await getProjectById(id);
+  const originalCount = project.members?.length || 0;
   const members = (project.members || []).filter((m) => m !== memberId);
-  return await updateProject(id, { members });
+
+  const updatedProject = await updateProject(id, { members });
+
+  if (members.length < originalCount) {
+    logger.info('Project member removed', {
+      type: 'project_member_removed',
+      projectId: id,
+      memberId,
+      totalMembers: members.length,
+    });
+  }
+
+  return updatedProject;
 };
 
 export const getProjectStatistics = async () => {
@@ -216,7 +301,9 @@ export const validateProjectAccessGrpc = async (
 };
 
 export const handleTaskCreated = async (event: Record<string, unknown>, _metadata: unknown) => {
-  logger.info('📝 Task created in project:', {
+  logger.info('Event received - task.created', {
+    type: 'event_received',
+    eventType: 'task.created',
     projectId: event.projectId,
     taskId: event.taskId,
     title: event.title,
@@ -224,7 +311,9 @@ export const handleTaskCreated = async (event: Record<string, unknown>, _metadat
 };
 
 export const handleTaskDeleted = async (event: Record<string, unknown>, _metadata: unknown) => {
-  logger.info('🗑️ Task deleted from project:', {
+  logger.info('Event received - task.deleted', {
+    type: 'event_received',
+    eventType: 'task.deleted',
     projectId: event.projectId,
     taskId: event.taskId,
   });
