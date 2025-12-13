@@ -1,5 +1,5 @@
 import request from 'supertest';
-import app from '../app';
+import app from '../../app';
 
 describe('Project API Endpoints', () => {
   describe('GET /api/v1/health', () => {
