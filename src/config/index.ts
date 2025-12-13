@@ -4,6 +4,7 @@ dotenv.config();
 
 export const config = {
   env: process.env.NODE_ENV || 'development',
+  environment: process.env.ENVIRONMENT || process.env.NODE_ENV || 'development',
   port: parseInt(process.env.PORT || '3001', 10),
   apiVersion: process.env.API_VERSION || 'v1',
   serviceName: process.env.SERVICE_NAME || 'project-service',
