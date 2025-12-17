@@ -24,7 +24,16 @@ export const config = {
     poolMax: parseInt(process.env.DB_POOL_MAX || '10', 10),
   },
   rabbitmq: {
-    url: process.env.RABBITMQ_URL || 'amqp://admin:admin123@rabbitmq:5672',
+    host: process.env.RABBITMQ_HOST || 'localhost',
+    port: parseInt(process.env.RABBITMQ_PORT || '5672', 10),
+    user: process.env.RABBITMQ_USER || 'admin',
+    password: process.env.RABBITMQ_PASSWORD || 'admin123',
+    get url(): string {
+      // URL-encode credentials to handle special characters like @
+      const encodedUser = encodeURIComponent(this.user);
+      const encodedPassword = encodeURIComponent(this.password);
+      return `amqp://${encodedUser}:${encodedPassword}@${this.host}:${this.port}`;
+    },
   },
   rateLimit: {
     windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS || '900000', 10),
